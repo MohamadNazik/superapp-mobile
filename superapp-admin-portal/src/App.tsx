@@ -13,13 +13,29 @@ import MicroApps from "./pages/MicroApps";
 import Users from "./pages/Users";
 import ComingSoon from "./pages/ComingSoon";
 import NotFound from "./pages/NotFound";
+import AccessDenied from "./pages/AccessDenied";
 import { useNotification } from "./context";
 import { apiService } from "./services";
+import { hasAccess } from "./config/rbac.config";
 
 function App() {
   const { state, getAccessToken, signOut } = useAuth();
   const { showNotification } = useNotification();
   const hasShownLoginNotification = useRef(false);
+
+  // Clean up URL after logout redirect from Asgardeo
+  useEffect(() => {
+    if (!state.isLoading && !state.isAuthenticated) {
+      const url = new URL(window.location.href);
+      // Check if we have any auth-related params that need cleanup
+      if (url.searchParams.has('state') || url.searchParams.has('session_state')) {
+        url.searchParams.delete('state');
+        url.searchParams.delete('session_state');
+        url.searchParams.delete('code');
+        window.history.replaceState({}, document.title, url.pathname);
+      }
+    }
+  }, [state.isLoading, state.isAuthenticated]);
 
   // Initialize API service with token getter and sign out function
   useEffect(() => {
@@ -73,6 +89,12 @@ function App() {
   if (!state.isAuthenticated) {
     console.log("User not authenticated, showing login page");
     return <Login />;
+  }
+
+  // Check RBAC - user must belong to allowed groups
+  if (!hasAccess(state.roles)) {
+    console.log("User does not have required permissions, access denied");
+    return <AccessDenied />;
   }
 
   return (
