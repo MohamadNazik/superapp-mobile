@@ -13,12 +13,9 @@
 // KIND, either express or implied.  See the License for the
 // specific language governing permissions and limitations
 // under the License.
-package models
+package rbac
 
-type User struct {
-	Email         string
-	FirstName     string
-	LastName      string
-	UserThumbnail *string
-	Location      *string
-}
+const (
+	GroupAdmin = "admin"
+	GroupUser  = "user"
+)

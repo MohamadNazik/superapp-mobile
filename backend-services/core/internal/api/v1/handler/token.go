@@ -1,44 +1,39 @@
+// Copyright (c) 2025 WSO2 LLC. (https://www.wso2.com).
+//
+// WSO2 LLC. licenses this file to you under the Apache License,
+// Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 package handler
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
+	"mime"
 	"net/http"
 	"net/url"
-	"time"
 
-	"go-backend/internal/api/v1/dto"
-	"go-backend/internal/auth"
-	"go-backend/internal/config"
-	"go-backend/internal/models"
-	"go-backend/internal/services"
+	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/api/v1/dto"
+	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/auth"
+	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/config"
+	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/models"
+	"github.com/opensuperapp/opensuperapp/backend-services/core/internal/services"
 
 	"gorm.io/gorm"
-)
-
-const (
-	defaultHTTPTimeout = 10 * time.Second
-
-	// HTTP Headers and Content Types
-	headerContentType  = "Content-Type"
-	headerCacheControl = "Cache-Control"
-	contentTypeJSON    = "application/json"
-	contentTypeForm    = "application/x-www-form-urlencoded"
-	cacheControlPublic = "public, max-age=3600"
-
-	// Token Types
-	tokenTypeBearer = "Bearer"
-
-	// OAuth Parameters
-	grantTypeUserContext = "user_context"
-	paramGrantType       = "grant_type"
-	paramUserEmail       = "user_email"
-	paramMicroappID      = "microapp_id"
-	paramScope           = "scope"
 )
 
 type TokenHandler struct {
@@ -57,61 +52,54 @@ func NewTokenHandler(db *gorm.DB, cfg *config.Config, serviceTokenValidator serv
 	}
 }
 
-// ExchangeToken exchanges a user token (from Asgardeo) for a microapp-scoped token (from internal IDP)
+// ExchangeToken exchanges a user token (from External IdP) for a microapp-scoped token (from internal IDP)
 // This allows microapp frontends to get tokens for calling microapp backends
 func (h *TokenHandler) ExchangeToken(w http.ResponseWriter, r *http.Request) {
 	if !validateContentType(w, r) {
 		return
 	}
 	limitRequestBody(w, r, 0)
-	// 1. Get user info from context (already validated by AuthMiddleware against Asgardeo)
 	userInfo, ok := auth.GetUserInfo(r.Context())
 	if !ok {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		http.Error(w, errUserNotAuthorizedToAccessApp, http.StatusUnauthorized)
 		return
 	}
-
-	// 2. Parse request
 	var req dto.TokenExchangeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+		http.Error(w, errInvalidRequestBody, http.StatusBadRequest)
 		return
 	}
-
-	// Validate request
 	if req.MicroappID == "" {
-		http.Error(w, "microapp_id is required", http.StatusBadRequest)
+		http.Error(w, errMissingMicroAppID, http.StatusBadRequest)
 		return
 	}
-
 	// Validate that the microapp exists and is active
 	var microapp models.MicroApp
-	if err := h.db.Where("micro_app_id = ? AND active = ?", req.MicroappID, models.StatusActive).First(&microapp).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+	if err := h.db.WithContext(r.Context()).
+		Where("micro_app_id = ? AND active = ?", req.MicroappID, models.StatusActive).
+		First(&microapp).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			slog.Warn("Microapp not found or inactive", "microappID", req.MicroappID, "user", userInfo.Email)
-			http.Error(w, "microapp not found or inactive", http.StatusNotFound)
+			http.Error(w, errMicroAppNotFoundOrInactive, http.StatusNotFound)
 		} else {
 			slog.Error("Failed to validate microapp", "error", err, "microappID", req.MicroappID)
-			http.Error(w, "failed to validate microapp", http.StatusInternalServerError)
+			http.Error(w, errFailedToValidateMicroApp, http.StatusInternalServerError)
 		}
 		return
 	}
-
-	// 3. Call internal IDP to generate microapp-scoped token
+	// Call internal IDP to generate microapp-scoped token
 	token, expiresIn, err := h.requestMicroappToken(r.Context(), userInfo.Email, req.MicroappID, req.Scope)
 	if err != nil {
 		slog.Error("Failed to exchange token", "error", err, "user", userInfo.Email, "microapp", req.MicroappID)
-		http.Error(w, "failed to exchange token", http.StatusInternalServerError)
+		http.Error(w, errServerError, http.StatusInternalServerError)
 		return
 	}
-
-	// 4. Return new token
+	// Return new token
 	response := dto.TokenExchangeResponse{
 		AccessToken: token,
 		TokenType:   tokenTypeBearer,
 		ExpiresIn:   expiresIn,
 	}
-
 	slog.Info("Token exchanged successfully", "user", userInfo.Email, "microapp", req.MicroappID)
 	writeJSON(w, http.StatusOK, response)
 }
@@ -121,11 +109,11 @@ func (h *TokenHandler) ExchangeToken(w http.ResponseWriter, r *http.Request) {
 // Supports: Basic Auth header, form data with credentials, JSON body
 func (h *TokenHandler) ProxyOAuthToken(w http.ResponseWriter, r *http.Request) {
 	limitRequestBody(w, r, 0)
-
 	var clientID, clientSecret, grantType string
 	var forwardBody string
 
 	contentType := r.Header.Get(headerContentType)
+	mediaType, _, _ := mime.ParseMediaType(contentType)
 
 	// Check for Basic Auth header first (recommended OAuth2 method)
 	basicUser, basicPass, hasBasicAuth := r.BasicAuth()
@@ -135,93 +123,94 @@ func (h *TokenHandler) ProxyOAuthToken(w http.ResponseWriter, r *http.Request) {
 		clientID = basicUser
 		clientSecret = basicPass
 
-		// Parse form for grant_type only
+		// Parse form to get all parameters
 		if err := r.ParseForm(); err != nil {
-			http.Error(w, "invalid form data", http.StatusBadRequest)
+			http.Error(w, errInvalidFormData, http.StatusBadRequest)
 			return
 		}
 		grantType = r.FormValue(paramGrantType)
-
-		// Build form body with all credentials for forwarding
-		formData := url.Values{}
+		// Forward all original params + inject credentials (preserve scope, refresh_token, audience, etc.)
+		formData := r.Form
 		formData.Set(paramGrantType, grantType)
-		formData.Set("client_id", clientID)
-		formData.Set("client_secret", clientSecret)
+		formData.Set(paramClientID, clientID)
+		formData.Set(paramClientSecret, clientSecret)
 		forwardBody = formData.Encode()
 
-	} else if contentType == contentTypeJSON || contentType == "application/json" {
-		// JSON body
-		var reqBody struct {
-			GrantType    string `json:"grant_type"`
-			ClientID     string `json:"client_id"`
-			ClientSecret string `json:"client_secret"`
-		}
+	} else if mediaType == contentTypeJSON {
+		// JSON body - parse as map to preserve all fields
+		var reqBody map[string]any
 		if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
-			http.Error(w, "invalid request body", http.StatusBadRequest)
+			http.Error(w, errInvalidRequestBody, http.StatusBadRequest)
 			return
 		}
-		clientID = reqBody.ClientID
-		clientSecret = reqBody.ClientSecret
-		grantType = reqBody.GrantType
-
+		// Extract required fields
+		if v, ok := reqBody[paramClientID].(string); ok {
+			clientID = v
+		}
+		if v, ok := reqBody[paramClientSecret].(string); ok {
+			clientSecret = v
+		}
+		if v, ok := reqBody[paramGrantType].(string); ok {
+			grantType = v
+		}
 		// Build form body for forwarding (token service accepts form data)
+		// Preserve all fields including scope, refresh_token, audience, etc.
 		formData := url.Values{}
-		formData.Set(paramGrantType, grantType)
-		formData.Set("client_id", clientID)
-		formData.Set("client_secret", clientSecret)
+		for k, v := range reqBody {
+			vs, ok := v.(string)
+			if !ok || vs == "" {
+				continue
+			}
+			formData.Set(k, vs)
+		}
 		forwardBody = formData.Encode()
 
 	} else {
 		// Form data with credentials in body
 		if err := r.ParseForm(); err != nil {
-			http.Error(w, "invalid form data", http.StatusBadRequest)
+			http.Error(w, errInvalidFormData, http.StatusBadRequest)
 			return
 		}
 		grantType = r.FormValue(paramGrantType)
-		clientID = r.FormValue("client_id")
-		clientSecret = r.FormValue("client_secret")
+		clientID = r.FormValue(paramClientID)
+		clientSecret = r.FormValue(paramClientSecret)
 		forwardBody = r.Form.Encode()
 	}
-
 	// Validate required fields
 	if grantType == "" {
-		http.Error(w, "grant_type is required", http.StatusBadRequest)
+		http.Error(w, errUnsupportedGrant, http.StatusBadRequest)
 		return
 	}
 	if clientID == "" || clientSecret == "" {
-		http.Error(w, "client_id and client_secret are required", http.StatusBadRequest)
+		http.Error(w, errInvalidRequest, http.StatusBadRequest)
 		return
 	}
-
 	// Forward the request to internal IDP
 	idpURL := fmt.Sprintf("%s/oauth/token", h.cfg.InternalIdPBaseURL)
-
 	req, err := http.NewRequestWithContext(r.Context(), http.MethodPost, idpURL, bytes.NewBufferString(forwardBody))
 	if err != nil {
 		slog.Error("Failed to create IDP request", "error", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		http.Error(w, errServerError, http.StatusInternalServerError)
 		return
 	}
 
 	req.Header.Set(headerContentType, contentTypeForm)
-
 	// Call internal IDP
 	resp, err := h.httpClient.Do(req)
 	if err != nil {
 		slog.Error("Failed to call IDP", "error", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		http.Error(w, errServerError, http.StatusInternalServerError)
 		return
 	}
 	defer resp.Body.Close()
-
 	// Read response
-	body, err := io.ReadAll(resp.Body)
+	limitedBody := io.LimitReader(resp.Body, IdPResponseBodyLimit)
+	body, err := io.ReadAll(limitedBody)
 	if err != nil {
 		slog.Error("Failed to read IDP response", "error", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		http.Error(w, errServerError, http.StatusInternalServerError)
 		return
 	}
-
 	// Forward the response
 	w.Header().Set(headerContentType, contentTypeJSON)
 	w.WriteHeader(resp.StatusCode)
@@ -237,17 +226,15 @@ func (h *TokenHandler) ProxyOAuthToken(w http.ResponseWriter, r *http.Request) {
 // GetJWKS returns the cached JWKS for microapp token validation
 func (h *TokenHandler) GetJWKS(w http.ResponseWriter, r *http.Request) {
 	if h.serviceTokenValidator == nil {
-		http.Error(w, "JWKS not available", http.StatusServiceUnavailable)
+		http.Error(w, errJWKSNotAvailable, http.StatusServiceUnavailable)
 		return
 	}
-
 	jwks, err := h.serviceTokenValidator.GetJWKS()
 	if err != nil {
 		slog.Error("Failed to get JWKS", "error", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		http.Error(w, errServerError, http.StatusInternalServerError)
 		return
 	}
-
 	w.Header().Set(headerContentType, contentTypeJSON)
 	w.Header().Set(headerCacheControl, cacheControlPublic)
 	w.Write(jwks)
@@ -257,7 +244,6 @@ func (h *TokenHandler) GetJWKS(w http.ResponseWriter, r *http.Request) {
 func (h *TokenHandler) requestMicroappToken(ctx context.Context, userEmail, microappID, scope string) (string, int, error) {
 	// Prepare request to internal IDP
 	idpURL := fmt.Sprintf("%s/oauth/token/user", h.cfg.InternalIdPBaseURL)
-
 	data := url.Values{}
 	data.Set(paramGrantType, grantTypeUserContext)
 	data.Set(paramUserEmail, userEmail)
@@ -265,36 +251,30 @@ func (h *TokenHandler) requestMicroappToken(ctx context.Context, userEmail, micr
 	if scope != "" {
 		data.Set(paramScope, scope)
 	}
-
-	req, err := http.NewRequestWithContext(ctx, "POST", idpURL, bytes.NewBufferString(data.Encode()))
+	req, err := http.NewRequestWithContext(ctx, httpMethodPost, idpURL, bytes.NewBufferString(data.Encode()))
 	if err != nil {
-		return "", 0, fmt.Errorf("failed to create request: %w", err)
+		return "", 0, fmt.Errorf("%s: %w", errFailedToCreateRequest, err)
 	}
-
 	req.Header.Set(headerContentType, contentTypeForm)
 
 	// Call internal IDP
 	resp, err := h.httpClient.Do(req)
 	if err != nil {
-		return "", 0, fmt.Errorf("failed to call IDP: %w", err)
+		return "", 0, fmt.Errorf("%s: %w", errFailedToCallIDP, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return "", 0, fmt.Errorf("IDP returned status %d: %s", resp.StatusCode, string(body))
+		limitedBody := io.LimitReader(resp.Body, IdPResponseBodyLimit)
+		body, _ := io.ReadAll(limitedBody)
+		return "", 0, fmt.Errorf(errIDPReturnedError, resp.StatusCode, string(body))
 	}
 
 	// Parse response
-	var tokenResp struct {
-		AccessToken string `json:"access_token"`
-		TokenType   string `json:"token_type"`
-		ExpiresIn   int    `json:"expires_in"`
-	}
+	var tokenResp dto.TokenExchangeResponse
 
 	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
-		return "", 0, fmt.Errorf("failed to parse IDP response: %w", err)
+		return "", 0, fmt.Errorf("%s: %w", errFailedToParseIDPResponse, err)
 	}
-
 	return tokenResp.AccessToken, tokenResp.ExpiresIn, nil
 }

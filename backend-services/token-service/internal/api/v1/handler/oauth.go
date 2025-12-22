@@ -1,3 +1,18 @@
+// Copyright (c) 2025 WSO2 LLC. (https://www.wso2.com).
+//
+// WSO2 LLC. licenses this file to you under the Apache License,
+// Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 package handler
 
 import (
@@ -6,8 +21,8 @@ import (
 	"net/http"
 	"strings"
 
-	"go-idp/internal/models"
-	"go-idp/internal/services"
+	"github.com/opensuperapp/opensuperapp/backend-services/token-service/internal/models"
+	"github.com/opensuperapp/opensuperapp/backend-services/token-service/internal/services"
 
 	"gorm.io/gorm"
 )
@@ -117,9 +132,8 @@ func (h *OAuthHandler) Token(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verify Secret (Hash comparison)
-	hashedSecret := hashSecret(clientSecret)
-	if hashedSecret != OAuth2client.ClientSecret {
+	// Verify Secret using bcrypt (provides constant-time comparison)
+	if err := checkSecret(clientSecret, OAuth2client.ClientSecret); err != nil {
 		slog.Warn("Invalid client secret", "client_id", clientID)
 		writeError(w, http.StatusUnauthorized, errInvalidClient, "")
 		return
@@ -177,8 +191,13 @@ func (h *OAuthHandler) CreateClient(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Hash the secret for storage
-	hashedSecret := hashSecret(clientSecret)
+	// Hash the secret for storage using bcrypt
+	hashedSecret, err := hashSecret(clientSecret)
+	if err != nil {
+		slog.Error("Failed to hash client secret", "error", err)
+		writeError(w, http.StatusInternalServerError, errServerError, "failed to hash client secret")
+		return
+	}
 
 	// Create the new client
 	newClient := models.OAuth2Client{

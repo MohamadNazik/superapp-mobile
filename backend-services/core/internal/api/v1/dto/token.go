@@ -13,12 +13,15 @@
 // KIND, either express or implied.  See the License for the
 // specific language governing permissions and limitations
 // under the License.
-package models
+package dto
 
-type User struct {
-	Email         string
-	FirstName     string
-	LastName      string
-	UserThumbnail *string
-	Location      *string
+type TokenExchangeRequest struct {
+	MicroappID string `json:"microapp_id" validate:"required"`
+	Scope      string `json:"scope,omitempty"`
+}
+
+type TokenExchangeResponse struct {
+	AccessToken string `json:"access_token"`
+	TokenType   string `json:"token_type"`
+	ExpiresIn   int    `json:"expires_in"`
 }

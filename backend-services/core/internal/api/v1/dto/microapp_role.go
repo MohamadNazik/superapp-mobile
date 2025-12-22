@@ -13,12 +13,15 @@
 // KIND, either express or implied.  See the License for the
 // specific language governing permissions and limitations
 // under the License.
-package models
+package dto
 
-type User struct {
-	Email         string
-	FirstName     string
-	LastName      string
-	UserThumbnail *string
-	Location      *string
+type MicroAppRoleResponse struct {
+	ID         int    `json:"id"`
+	MicroAppID string `json:"microAppId"`
+	Role       string `json:"role"`
+	Active     int    `json:"active"`
+}
+
+type CreateMicroAppRoleRequest struct {
+	Role string `json:"role" validate:"required"`
 }

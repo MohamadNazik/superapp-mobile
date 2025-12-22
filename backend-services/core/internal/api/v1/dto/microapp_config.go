@@ -13,12 +13,16 @@
 // KIND, either express or implied.  See the License for the
 // specific language governing permissions and limitations
 // under the License.
-package models
+package dto
 
-type User struct {
-	Email         string
-	FirstName     string
-	LastName      string
-	UserThumbnail *string
-	Location      *string
+import "encoding/json"
+
+type MicroAppConfigResponse struct {
+	ConfigKey   string          `json:"configKey"`
+	ConfigValue json.RawMessage `json:"configValue"`
+}
+
+type CreateMicroAppConfigRequest struct {
+	ConfigKey   string          `json:"configKey" validate:"required"`
+	ConfigValue json.RawMessage `json:"configValue" validate:"required"`
 }

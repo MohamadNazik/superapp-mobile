@@ -13,12 +13,19 @@
 // KIND, either express or implied.  See the License for the
 // specific language governing permissions and limitations
 // under the License.
-package models
+package dto
 
-type User struct {
-	Email         string
-	FirstName     string
-	LastName      string
-	UserThumbnail *string
-	Location      *string
+import "encoding/json"
+
+type UserConfigResponse struct {
+	Email       string          `json:"email"`
+	ConfigKey   string          `json:"configKey"`
+	ConfigValue json.RawMessage `json:"configValue"`
+	IsActive    int             `json:"isActive"`
+}
+
+type UpsertUserConfigRequest struct {
+	ConfigKey   string          `json:"configKey" validate:"required"`
+	ConfigValue json.RawMessage `json:"configValue" validate:"required"`
+	IsActive    int             `json:"isActive"`
 }

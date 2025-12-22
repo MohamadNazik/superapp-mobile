@@ -13,12 +13,20 @@
 // KIND, either express or implied.  See the License for the
 // specific language governing permissions and limitations
 // under the License.
-package models
+package dto
 
-type User struct {
-	Email         string
-	FirstName     string
-	LastName      string
-	UserThumbnail *string
-	Location      *string
+type UserResponse struct {
+	Email         string  `json:"workEmail"`
+	FirstName     string  `json:"firstName"`
+	LastName      string  `json:"lastName"`
+	UserThumbnail *string `json:"userThumbnail,omitempty"`
+	Location      *string `json:"location,omitempty"`
+}
+
+type UpsertUserRequest struct {
+	Email         string  `json:"workEmail" validate:"required,email"`
+	FirstName     string  `json:"firstName" validate:"required,min=1"`
+	LastName      string  `json:"lastName" validate:"required,min=1"`
+	UserThumbnail *string `json:"userThumbnail,omitempty"`
+	Location      *string `json:"location,omitempty"`
 }

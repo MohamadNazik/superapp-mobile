@@ -1,9 +1,22 @@
+// Copyright (c) 2025 WSO2 LLC. (https://www.wso2.com).
+//
+// WSO2 LLC. licenses this file to you under the Apache License,
+// Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 package handler
 
 import (
 	"bytes"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -11,9 +24,10 @@ import (
 	"strings"
 	"testing"
 
-	"go-idp/internal/models"
-	"go-idp/internal/services"
+	"github.com/opensuperapp/opensuperapp/backend-services/token-service/internal/models"
+	"github.com/opensuperapp/opensuperapp/backend-services/token-service/internal/services"
 
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -36,10 +50,13 @@ func setupTestDB(t *testing.T) *gorm.DB {
 
 // seedTestClient creates a test OAuth2 client
 func seedTestClient(t *testing.T, db *gorm.DB) *models.OAuth2Client {
-	// Hash the secret using SHA256 (same as in handler)
+	// Hash the secret using bcrypt (same as in handler)
 	secret := "test-secret"
-	hash := sha256.Sum256([]byte(secret))
-	hashedSecret := hex.EncodeToString(hash[:])
+	hash, err := bcrypt.GenerateFromPassword([]byte(secret), 12)
+	if err != nil {
+		t.Fatalf("Failed to hash secret: %v", err)
+	}
+	hashedSecret := string(hash)
 
 	client := &models.OAuth2Client{
 		ClientID:     "test-client",
