@@ -20,9 +20,6 @@ export const CLIENT_ID = process.env.EXPO_PUBLIC_CLIENT_ID ?? "";
 export const REDIRECT_URI = process.env.EXPO_PUBLIC_REDIRECT_URI ?? "";
 export const TOKEN_URL = process.env.EXPO_PUBLIC_TOKEN_URL ?? "";
 export const LOGOUT_URL = process.env.EXPO_PUBLIC_LOGOUT_URL ?? "";
-export const AUTHORIZATION_URL = process.env.EXPO_PUBLIC_AUTHORIZATION_URL ?? "";
-export const REVOCATION_URL = process.env.EXPO_PUBLIC_REVOCATION_URL ?? "";
-export const ISSUER = process.env.EXPO_PUBLIC_ISSUER ?? "";
 export const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_BASE_URL ?? "";
 export const MICRO_APP_STORAGE_DIR =
   process.env.EXPO_PUBLIC_MICRO_APP_STORAGE_DIR ?? "";
@@ -87,6 +84,12 @@ export const isAndroid = Platform.OS === "android";
 export const isIos = Platform.OS === "ios";
 export const FULL_SCREEN_VIEWING_MODE = "fullscreen";
 export const DEFAULT_VIEWING_MODE = "default";
+// Keys for Secure Store
+export const ACCESS_TOKEN = "secure_access_token";
+export const REFRESH_TOKEN = "secure_refresh_token";
+export const ID_TOKEN = "secure_id_token";
+export const EXPIRES_AT_KEY = "secure_expires_at";
+export const AUTH_EMAIL_KEY = "secure_auth_email";
 // OpenTelemetry Configuration
 export const OTEL_ENABLED = process.env.EXPO_PUBLIC_OTEL_ENABLED === "true";
 export const OTEL_COLLECTOR_URL =

@@ -24,6 +24,21 @@ import { restoreAuth } from "@/context/slices/authSlice";
 import { getVersions } from "@/context/slices/versionSlice";
 import { setUserInfo } from "@/context/slices/userInfoSlice";
 
+jest.mock("@/constants/Constants", () => ({
+  APPS: "APPS",
+  USER_INFO: "USER_INFO",
+}));
+
+
+jest.mock("@/context/slices/appSlice", () => ({
+  setApps: jest.fn((apps) => ({ type: "apps/setApps", payload: apps })),
+}));
+
+jest.mock("@/context/slices/userInfoSlice", () => ({
+  setUserInfo: jest.fn((info) => ({ type: "userInfo/setUserInfo", payload: info })),
+}));
+
+
 jest.mock("react-redux", () => ({
   ...jest.requireActual("react-redux"),
   useDispatch: jest.fn(),
@@ -43,6 +58,22 @@ jest.mock("@/context/slices/versionSlice", () => ({
 
 jest.mock("@/utils/performLogout", () => ({
   performLogout: jest.fn(() => ({ type: "auth/logout" })),
+}));
+
+jest.mock("@/telemetry/telemetryService", () => ({
+  initializeTelemetry: jest.fn(() => Promise.resolve()),
+}));
+
+jest.mock("@/telemetry/metrics", () => ({
+  recordAppStartTime: jest.fn(),
+}));
+
+jest.mock("@/utils/exchangedTokenRehydrator", () => ({
+  buildAppsWithTokens: jest.fn((apps) => Promise.resolve(apps)),
+}));
+
+jest.mock("@/utils/freshInstall", () => ({
+  handleFreshInstall: jest.fn(() => Promise.resolve()),
 }));
 
 describe("AppInitializer", () => {
