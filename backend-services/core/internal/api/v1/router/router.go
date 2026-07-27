@@ -60,6 +60,13 @@ func NewNoAuthRouter(db *gorm.DB, cfg *config.Config, serviceTokenValidator serv
 
 	tokenHandler := handler.NewTokenHandler(db, cfg, serviceTokenValidator)
 
+	// Health check endpoint - used to verify liveness
+	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"ok"}`))
+	})
+
 	// OAuth  token endpoint - proxies to internal IDP for service token generation
 	r.Post("/oauth/token", tokenHandler.ProxyOAuthToken)
 

@@ -1,0 +1,80 @@
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./backend-services/core/migrations/001_init_schema.sql:/docker-entrypoint-initdb.d/001_init_schema.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  token-service:
+    build: ./backend-services/token-service
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+    environment:
+      PORT: 8081
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME}
+      KEYS_DIR: ./keys/dev
+      ACTIVE_KEY_ID: dev-key-example
+      TOKEN_EXPIRY_SECONDS: 3600
+    volumes:
+      - ./backend-services/token-service/keys/dev:/app/keys/dev:ro
+    ports:
+      - "8081:8081"
+
+  core-service:
+    build: ./backend-services/core
+    depends_on:
+      mysql:
+        condition: service_healthy
+      token-service:
+        condition: service_started
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 9090
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME}
+      EXTERNAL_IDP_JWKS_URL: ${EXTERNAL_IDP_JWKS_URL}
+      EXTERNAL_IDP_ISSUER: ${EXTERNAL_IDP_ISSUER}
+      EXTERNAL_IDP_AUDIENCE: ${EXTERNAL_IDP_AUDIENCE}
+      INTERNAL_IDP_BASE_URL: http://token-service:8081
+      INTERNAL_IDP_ISSUER: superapp
+      INTERNAL_IDP_AUDIENCE: superapp-api
+      USER_SERVICE_TYPE: db
+      FILE_SERVICE_TYPE: db
+      FILE_SERVICE_BACKEND_BASE_URL: ${FILE_SERVICE_BACKEND_BASE_URL}
+    ports:
+      - "9090:9090"
+
+  admin-portal:
+    build: ./superapp-admin-portal
+    depends_on:
+      - core-service
+    environment:
+      ASGARDEO_CLIENT_ID: ${ASGARDEO_CLIENT_ID}
+      ASGARDEO_BASE_URL: ${ASGARDEO_BASE_URL}
+      SIGN_IN_REDIRECT_URL: ${SIGN_IN_REDIRECT_URL}
+      SIGN_OUT_REDIRECT_URL: ${SIGN_OUT_REDIRECT_URL}
+      # Browser-facing URL — must be reachable from your host, not the docker network name
+      API_BASE_URL: ${API_BASE_URL}
+    ports:
+      - "8080:8080"
+
+volumes:
+  mysql-data:
