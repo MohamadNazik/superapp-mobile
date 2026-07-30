@@ -14,11 +14,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-// Enable TypeScript compilation for config plugins
-require('ts-node/register');
-
 import "dotenv/config";
-import type { ExpoConfig } from "expo/config";
 
 /* Firebase configuration for push notifications */
 import fs from "fs";
@@ -41,7 +37,7 @@ const APP_VERSION = process.env.APP_VERSION ?? "1.0.0";
 const BUNDLE_ID = process.env.BUNDLE_IDENTIFIER ?? "com.example";
 const ANDROID_PACKAGE = process.env.ANDROID_PACKAGE ?? "com.example";
 const IOS_URL_SCHEME = process.env.IOS_URL_SCHEME ?? "example.scheme";
-// const EAS_PROJECT_ID = process.env.EAS_PROJECT_ID ?? ""; // Uncomment this if you use EAS
+const EAS_PROJECT_ID = process.env.EAS_PROJECT_ID ?? ""; // Uncomment this if you use EAS
 
 /* =============== Firebase Configuration ===============
  *
@@ -65,12 +61,12 @@ const IOS_URL_SCHEME = process.env.IOS_URL_SCHEME ?? "example.scheme";
  *
  * ======================================================= */
 
-const here = (...p: string[]) => path.resolve(__dirname, ...p);
-const fileIfExists = (p: string) => (fs.existsSync(p) ? p : undefined);
+const here = (...p) => path.resolve(process.cwd(), ...p);
+const fileIfExists = (p) => (fs.existsSync(p) ? p : undefined);
 const iosPlist = fileIfExists(here("google-services/GoogleService-Info.plist"));
 const androidJson = fileIfExists(here("google-services/google-services.json"));
 
-const config: ExpoConfig = {
+const config = {
   name: APP_NAME,
   slug: APP_SLUG,
   scheme: APP_SCHEME,
@@ -193,7 +189,7 @@ const config: ExpoConfig = {
     ],
     // Remove the intent scheme from the AndroidManifest.xml as it is duplicated by the app auth plugin
     [
-      "./plugins/withRemoveIntentScheme.ts",
+      "./plugins/withRemoveIntentScheme.js",
       {
         scheme: APP_SCHEME,
       },
@@ -202,7 +198,7 @@ const config: ExpoConfig = {
   experiments: { typedRoutes: true },
   extra: {
     router: { origin: false },
-    // eas: { projectId: EAS_PROJECT_ID }, // Uncomment this if you use EAS
+    eas: { projectId: EAS_PROJECT_ID }, // Uncomment this if you use EAS
   },
   assetBundlePatterns: ["**/*"],
 };

@@ -13,7 +13,6 @@
 // KIND, either express or implied.  See the License for the
 // specific language governing permissions and limitations
 // under the License.
-import { ExpoConfig } from "expo/config";
 import fs from "fs";
 import path from "path";
 
@@ -28,20 +27,20 @@ const FIREBASE_PLUGINS = [
  * @param config - The Expo config to configure.
  * @returns The configured Expo config.
  */
-export const withFirebase = (config: ExpoConfig) => {
+export const withFirebase = (config) => {
   /**
    * Resolves the path to the given files.
    * @param p - The path to resolve.
    * @returns The resolved path.
    */
-  const here = (...p: string[]) => path.resolve(process.cwd(), ...p);
+  const here = (...p) => path.resolve(process.cwd(), ...p);
 
   /**
    * Checks if the file exists.
    * @param p - The path to check.
    * @returns The path if the file exists, otherwise undefined.
    */
-  const fileIfExists = (p: string) => (fs.existsSync(p) ? p : undefined);
+  const fileIfExists = (p) => (fs.existsSync(p) ? p : undefined);
 
   // Android and iOS google services files.
   const iosPlist = fileIfExists(
@@ -66,7 +65,7 @@ export const withFirebase = (config: ExpoConfig) => {
       buildPropertiesPlugin[1] = {
         ...buildPropertiesPlugin[1],
         ios: {
-          ...(buildPropertiesPlugin[1] as any).ios,
+          ...buildPropertiesPlugin[1].ios,
           useFrameworks: "static",
         },
       };

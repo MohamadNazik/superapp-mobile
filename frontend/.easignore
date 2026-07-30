@@ -1,4 +1,6 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+# Learn more https://docs.expo.dev/build-reference/easignore/
+# Mirrors .gitignore, but with the Gradle wrapper un-ignore rules placed last
+# to guarantee they take precedence, per Expo's own guidance.
 
 # dependencies
 node_modules/
@@ -43,6 +45,11 @@ google-services/
 
 # builds
 android/*
+ios/
+
+app.json
+
+# Ensure Gradle wrapper files are always included for EAS builds
 !android/gradlew
 !android/gradlew.bat
 !android/gradle
@@ -51,6 +58,3 @@ android/*
 !android/gradle/wrapper/gradle-wrapper.properties
 !gradle-wrapper-backup/gradle-wrapper.jar
 !gradle-wrapper-backup/gradle-wrapper.properties
-ios/
-
-app.json

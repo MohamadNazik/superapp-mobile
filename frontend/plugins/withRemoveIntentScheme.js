@@ -18,16 +18,12 @@ const {
   AndroidConfig,
 } = require("@expo/config-plugins");
 
-interface RemoveIntentSchemeProps {
-  scheme: string;
-}
-
 /**
  * Finds the main activity in the AndroidManifest.xml
  * @param androidManifest The AndroidManifest.xml object
  * @returns The main activity object or null if not found
  */
-const getMainActivity = (androidManifest: any): any => {
+const getMainActivity = (androidManifest) => {
   const { application } = androidManifest.manifest;
   if (!application || !Array.isArray(application)) {
     return null;
@@ -39,15 +35,15 @@ const getMainActivity = (androidManifest: any): any => {
   }
 
   // Find the activity with the LAUNCHER intent filter
-  const mainActivity = mainApplication.activity.find((activity: any) =>
+  const mainActivity = mainApplication.activity.find((activity) =>
     activity["intent-filter"]?.some(
-      (intentFilter: any) =>
+      (intentFilter) =>
         intentFilter.action?.some(
-          (action: any) =>
+          (action) =>
             action.$["android:name"] === "android.intent.action.MAIN"
         ) &&
         intentFilter.category?.some(
-          (category: any) =>
+          (category) =>
             category.$["android:name"] === "android.intent.category.LAUNCHER"
         )
     )
@@ -62,16 +58,13 @@ const getMainActivity = (androidManifest: any): any => {
  * @param props The properties for the plugin
  * @param props.scheme The scheme to remove
  */
-const withRemoveIntentScheme = (
-  config: any,
-  { scheme }: RemoveIntentSchemeProps
-) => {
+const withRemoveIntentScheme = (config, { scheme }) => {
   if (!scheme || typeof scheme !== "string" || scheme.trim() === "") {
     console.warn("Scheme is required and must be a non-empty string");
     return config;
   }
 
-  return withAndroidManifest(config, (config: any) => {
+  return withAndroidManifest(config, (config) => {
     const androidManifest = config.modResults;
     const mainActivity = getMainActivity(androidManifest);
 
@@ -84,11 +77,11 @@ const withRemoveIntentScheme = (
 
     if (mainActivity["intent-filter"]) {
       // Iterate over each intent-filter
-      mainActivity["intent-filter"].forEach((intentFilter: any) => {
+      mainActivity["intent-filter"].forEach((intentFilter) => {
         if (intentFilter.data) {
           // Filter out the data tag with the specified scheme
           intentFilter.data = intentFilter.data.filter(
-            (data: any) => data.$["android:scheme"] !== scheme
+            (data) => data.$["android:scheme"] !== scheme
           );
         }
       });
