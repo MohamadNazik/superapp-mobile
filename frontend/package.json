@@ -32,6 +32,8 @@
     "@opentelemetry/sdk-metrics": "^1.25.1",
     "@opentelemetry/semantic-conventions": "^1.25.1",
     "@react-native-async-storage/async-storage": "1.23.1",
+    "@react-native-firebase/app": "^26.0.0",
+    "@react-native-firebase/messaging": "^26.0.0",
     "@react-native-google-signin/google-signin": "^14.0.1",
     "@react-navigation/bottom-tabs": "^7.2.0",
     "@react-navigation/native": "^7.0.14",
