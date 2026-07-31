@@ -102,7 +102,7 @@ func Load() *Config {
 		// External IDP (Asgardeo)
 		ExternalIdPJWKSURL:  getEnvRequired("EXTERNAL_IDP_JWKS_URL"),
 		ExternalIdPIssuer:   getEnvRequired("EXTERNAL_IDP_ISSUER"),
-		ExternalIdPAudience: getEnvRequired("EXTERNAL_IDP_AUDIENCE"),
+		ExternalIdPAudience: getEnv("EXTERNAL_IDP_AUDIENCE", ""),
 
 		// Internal IDP (go-idp)
 		InternalIdPBaseURL:  getEnvRequired("INTERNAL_IDP_BASE_URL"),
