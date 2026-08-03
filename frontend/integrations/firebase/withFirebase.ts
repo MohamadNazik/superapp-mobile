@@ -34,7 +34,7 @@ export const withFirebase = (config: ExpoConfig) => {
    * @param p - The path to resolve.
    * @returns The resolved path.
    */
-  const here = (...p: string[]) => path.resolve(__dirname, ...p);
+  const here = (...p: string[]) => path.resolve(process.cwd(), ...p);
 
   /**
    * Checks if the file exists.
@@ -45,10 +45,10 @@ export const withFirebase = (config: ExpoConfig) => {
 
   // Android and iOS google services files.
   const iosPlist = fileIfExists(
-    here("../../google-services/GoogleService-Info.plist")
+    here("google-services/GoogleService-Info.plist")
   );
   const androidJson = fileIfExists(
-    here("../../google-services/google-services.json")
+    here("google-services/google-services.json")
   );
 
   // Adds the Firebase plugins to the Expo config.
