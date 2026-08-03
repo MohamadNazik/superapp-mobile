@@ -55,7 +55,7 @@ const SplashModal = ({
           autoPlay
           loop
           resizeMode="contain"
-          style={{ width: "50%", height: 500 }}
+          style={{ width: 300, height: 300 }}
         />
       </View>
     </Modal>

@@ -39,9 +39,7 @@ const screenWidth = Dimensions.get("window").width;
 const windowHeight = Dimensions.get("window").height;
 
 const bannerImages = [
-  require("../../assets/images/banner1.png"),
-  require("../../assets/images/banner2.png"),
-  require("../../assets/images/banner3.png"),
+  require("../../assets/images/banner1.png")
 ];
 
 const Discovery = () => {
