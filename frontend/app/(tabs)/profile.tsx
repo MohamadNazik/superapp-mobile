@@ -20,6 +20,7 @@ import {
   useColorScheme,
   StyleSheet,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import React from "react";
@@ -43,7 +44,7 @@ const SettingsScreen = () => {
 
   useTrackActiveScreen(ScreenPaths.PROFILE);
 
-  const { basicUserInfo, handleLogout } = useProfile();
+  const { basicUserInfo, handleLogout, isLoggingOut } = useProfile();
 
   return (
     <SafeAreaView style={styles.container} edges={['left', 'right']}>
@@ -85,17 +86,28 @@ const SettingsScreen = () => {
 
         <TouchableOpacity
           activeOpacity={0.5}
-          style={styles.logoutButton}
+          style={[styles.logoutButton, isLoggingOut && styles.logoutButtonDisabled]}
           onPress={handleLogout}
+          disabled={isLoggingOut}
         >
           <View style={styles.logoutRow}>
-            <Ionicons
-              name="log-out-outline"
-              size={20}
-              color={Colors[colorScheme ?? "light"].primaryBackgroundColor}
-              style={styles.logoutIcon}
-            />
-            <Text style={styles.logoutText}>Sign Out</Text>
+            {isLoggingOut ? (
+              <ActivityIndicator
+                size="small"
+                color={Colors[colorScheme ?? "light"].primaryBackgroundColor}
+                style={styles.logoutIcon}
+              />
+            ) : (
+              <Ionicons
+                name="log-out-outline"
+                size={20}
+                color={Colors[colorScheme ?? "light"].primaryBackgroundColor}
+                style={styles.logoutIcon}
+              />
+            )}
+            <Text style={styles.logoutText}>
+              {isLoggingOut ? "Signing Out..." : "Sign Out"}
+            </Text>
           </View>
         </TouchableOpacity>
       </View>
@@ -144,6 +156,9 @@ const createStyles = (colorScheme: "light" | "dark") =>
       borderRadius: 12,
       alignItems: "center",
       justifyContent: "center",
+    },
+    logoutButtonDisabled: {
+      opacity: 0.7,
     },
     logoutRow: {
       flexDirection: "row",

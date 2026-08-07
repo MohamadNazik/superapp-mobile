@@ -16,12 +16,14 @@
 import { HapticTab } from "@/components/HapticTab";
 import TabBarBackground from "@/components/ui/TabBarBackground";
 import { Colors } from "@/constants/Colors";
+import { RootState } from "@/context/store";
 import { useRestoreLastTab } from "@/hooks/useRestoreLastTab";
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import { Platform } from "react-native";
+import { Platform, View } from "react-native";
 import { Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSelector } from "react-redux";
 
 type TabType = {
   name: string;
@@ -71,53 +73,73 @@ export default function TabLayout() {
   // Load last active tab and navigate to it
   useRestoreLastTab();
   const insets = useSafeAreaInsets();
+  const isLoggingOut = useSelector((state: RootState) => state.auth.isLoggingOut);
+  const tabBarHeight = 60 + insets.bottom;
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors.companyOrange,
-        headerShown: true,
-        tabBarButton: HapticTab,
-        tabBarBackground: TabBarBackground,
-        tabBarStyle: Platform.select({
-          ios: {
+    <>
+      <Tabs
+        screenOptions={{
+          tabBarActiveTintColor: Colors.companyOrange,
+          headerShown: true,
+          tabBarButton: HapticTab,
+          tabBarBackground: TabBarBackground,
+          tabBarStyle: Platform.select({
+            ios: {
+              position: "absolute",
+              paddingTop: 5,
+            },
+            android: {
+              height: tabBarHeight,
+              paddingTop: 5,
+              paddingBottom: insets.bottom,
+              borderTopWidth: 0,
+              elevation: 0,
+            },
+            default: {
+              height: 60,
+              paddingTop: 5,
+            },
+          }),
+        }}
+      >
+        {tabs.map((tab, index) => (
+          <Tabs.Screen
+            key={`tab-${index}`}
+            name={tab.name}
+            options={{
+              tabBarAccessibilityLabel: `tab_${tab.name}`,
+              headerShown: tab.options.headerShown,
+              title: tab.options.title,
+              headerTitleAllowFontScaling: false,
+              href: tab.options.href,
+              tabBarIcon: ({ focused, color }) => (
+                <Ionicons
+                  name={focused ? tab.options.iconFocused : tab.options.icon}
+                  size={28}
+                  color={color}
+                />
+              ),
+            }}
+          />
+        ))}
+      </Tabs>
+      {/* Blocks all touches on the tab bar while signing out, regardless of
+          whether tabBarButton's disabled prop is honored by the tab bar's
+          internal rendering. */}
+      {isLoggingOut && (
+        <View
+          pointerEvents="auto"
+          style={{
             position: "absolute",
-            paddingTop: 5,
-          },
-          android: {
-            height: 60 + insets.bottom,
-            paddingTop: 5,
-            paddingBottom: insets.bottom,
-            borderTopWidth: 0,
-            elevation: 0,
-          },
-          default: {
-            height: 60,
-            paddingTop: 5,
-          },
-        }),
-      }}
-    >
-      {tabs.map((tab, index) => (
-        <Tabs.Screen
-          key={`tab-${index}`}
-          name={tab.name}
-          options={{
-            tabBarAccessibilityLabel: `tab_${tab.name}`,
-            headerShown: tab.options.headerShown,
-            title: tab.options.title,
-            headerTitleAllowFontScaling: false,
-            href: tab.options.href,
-            tabBarIcon: ({ focused, color }) => (
-              <Ionicons
-                name={focused ? tab.options.iconFocused : tab.options.icon}
-                size={28}
-                color={color}
-              />
-            ),
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: tabBarHeight,
+            zIndex: 999,
           }}
         />
-      ))}
-    </Tabs>
+      )}
+    </>
   );
 }

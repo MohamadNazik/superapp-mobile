@@ -29,6 +29,7 @@ interface AuthState {
   idToken: string | null;
   email: AuthData["email"] | null;
   isLoading: boolean;
+  isLoggingOut: boolean;
 }
 
 const initialState: AuthState = {
@@ -37,6 +38,7 @@ const initialState: AuthState = {
   idToken: null,
   email: null,
   isLoading: false,
+  isLoggingOut: false,
 };
 
 // Async action to restore persisted auth state
@@ -84,6 +86,9 @@ const authSlice = createSlice({
       state.email = action.payload.email;
       state.isLoading = false;
     },
+    setLoggingOut: (state, action: { payload: boolean }) => {
+      state.isLoggingOut = action.payload;
+    },
     resetAll: () => initialState,
   },
   extraReducers: (builder) => {
@@ -103,5 +108,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { setAuth, resetAll } = authSlice.actions;
+export const { setAuth, setLoggingOut, resetAll } = authSlice.actions;
 export default authSlice.reducer;

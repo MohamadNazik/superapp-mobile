@@ -15,6 +15,7 @@
 // under the License.
 
 import ListItem from "@/components/ListItem";
+import { ListItemSkeletonList } from "@/components/ListItemSkeleton";
 import SearchBar from "@/components/SearchBar";
 import SignInMessage from "@/components/SignInMessage";
 import SignInModal from "@/components/SignInModal";
@@ -22,7 +23,6 @@ import { Colors } from "@/constants/Colors";
 import { NOT_DOWNLOADED } from "@/constants/Constants";
 import { useStore } from "@/hooks/useStore";
 import {
-  ActivityIndicator,
   FlatList,
   Keyboard,
   StyleSheet,
@@ -82,10 +82,8 @@ const Store = () => {
 
       <SignInModal visible={showModal} onClose={() => setShowModal(false)} />
       {isLoading ? (
-        <View
-          style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
-        >
-          <ActivityIndicator color={Colors.companyOrange} size="large" />
+        <View style={styles.listContent}>
+          <ListItemSkeletonList />
         </View>
       ) : (
         <FlatList
