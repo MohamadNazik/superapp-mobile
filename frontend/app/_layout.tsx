@@ -39,10 +39,6 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
   const { showSplash, onAppLoadComplete } = useAppLayout();
 
-  if (showSplash) {
-    return <SplashModal loading={showSplash} animationType="fade" />;
-  }
-
   return (
     <SafeAreaProvider>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
@@ -71,6 +67,9 @@ export default function RootLayout() {
             }
             translucent={false}
           />
+          {showSplash && (
+            <SplashModal loading={showSplash} animationType="fade" />
+          )}
         </>
       </ThemeProvider>
     </SafeAreaProvider>
