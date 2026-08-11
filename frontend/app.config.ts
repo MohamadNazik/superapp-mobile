@@ -115,7 +115,7 @@ const config: ExpoConfig = {
       foregroundImage: "./assets/images/adaptive-icon.png",
       backgroundColor: "#FFFFFF",
     },
-    versionCode: 3,
+    versionCode: 4,
   },
   web: {
     bundler: "metro",
