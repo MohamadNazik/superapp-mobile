@@ -47,6 +47,7 @@ export const useMyApps = () => {
 
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [filteredApps, setFilteredApps] = useState(apps);
+  const [isLoading, setIsLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [currentAction, setCurrentAction] = useState<string | null>(null);
   const [progress, setProgress] = useState<{ done: number; total: number }>({
@@ -86,6 +87,8 @@ export const useMyApps = () => {
           "Initialization Error",
           "An error occurred while setting up the app. Please restart and try again."
         );
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -181,6 +184,7 @@ export const useMyApps = () => {
     filteredApps,
     searchQuery,
     setSearchQuery,
+    isLoading,
     syncing,
     currentAction,
     progress,

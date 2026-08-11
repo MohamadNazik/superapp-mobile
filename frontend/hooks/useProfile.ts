@@ -30,7 +30,7 @@ import { performLogout } from "@/utils/performLogout";
  */
 export const useProfile = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { accessToken } = useSelector((state: RootState) => state.auth);
+  const { accessToken, isLoggingOut } = useSelector((state: RootState) => state.auth);
   const { userInfo } = useSelector((state: RootState) => state.userInfo);
   
   const [basicUserInfo, setBasicUserInfo] = useState<BasicUserInfo>({
@@ -93,5 +93,6 @@ export const useProfile = () => {
   return {
     basicUserInfo,
     handleLogout,
+    isLoggingOut,
   };
 };

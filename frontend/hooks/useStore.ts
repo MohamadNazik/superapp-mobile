@@ -56,8 +56,11 @@ export const useStore = () => {
   useEffect(() => {
     const initializeApps = async () => {
       setIsLoading(true);
-      if (accessToken) loadMicroAppDetails(dispatch, logout);
-      setIsLoading(false);
+      try {
+        if (accessToken) await loadMicroAppDetails(dispatch, logout);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     initializeApps();

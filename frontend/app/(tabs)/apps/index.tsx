@@ -30,6 +30,7 @@ import SyncingModal from "@/components/SyncingModal";
 import { Colors } from "@/constants/Colors";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import SearchBar from "@/components/SearchBar";
+import { WidgetSkeletonGrid } from "@/components/WidgetSkeleton";
 import { useTrackActiveScreen } from "@/hooks/useTrackActiveScreen";
 import { ScreenPaths } from "@/constants/ScreenPaths";
 import { useMyApps } from "@/hooks/useMyApps";
@@ -46,6 +47,7 @@ export default function HomeScreen() {
     filteredApps,
     searchQuery,
     setSearchQuery,
+    isLoading,
     syncing,
     currentAction,
     progress,
@@ -72,7 +74,10 @@ export default function HomeScreen() {
         progress={progress}
       />
 
-      <View style={{ marginTop: 16 }}>
+      <View style={{ marginTop: 16, paddingHorizontal: 16 }}>
+        {isLoading ? (
+          <WidgetSkeletonGrid />
+        ) : (
         <FlatList
           data={filteredApps}
           keyExtractor={(item) => item.appId}
@@ -117,6 +122,7 @@ export default function HomeScreen() {
             </>
           }
         />
+        )}
       </View>
     </SafeAreaView>
   );

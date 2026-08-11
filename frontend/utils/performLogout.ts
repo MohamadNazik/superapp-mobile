@@ -15,7 +15,7 @@
 // under the License.
 import { AUTH_DATA, USER_INFO } from "@/constants/Constants";
 import { ScreenPaths } from "@/constants/ScreenPaths";
-import { resetAll } from "@/context/slices/authSlice";
+import { resetAll, setLoggingOut } from "@/context/slices/authSlice";
 import { persistor, RootState } from "@/context/store";
 import { logout } from "@/services/authService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -33,10 +33,11 @@ import { getDevicePushToken } from "@/services/notificationService";
 export const performLogout = createAsyncThunk(
   "auth/logout",
   async (_, { dispatch, getState }) => {
+    dispatch(setLoggingOut(true));
     try {
       const state = getState() as RootState;
       const appIds = state.apps.apps.map((app) => app.appId);
-      
+
       // Deactivate device token before logout
       try {
         const userEmail = state.auth.email;
@@ -74,6 +75,7 @@ export const performLogout = createAsyncThunk(
       );
     } catch (error) {
       console.error("Logout error:", error);
+      dispatch(setLoggingOut(false));
     }
   }
 );
