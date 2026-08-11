@@ -24,17 +24,16 @@ import { lockAsync, OrientationLock } from "expo-screen-orientation";
 export const useAppLayout = () => {
   const [isAppReady, setIsAppReady] = useState(false);
   const [isMinTimeElapsed, setIsMinTimeElapsed] = useState(false);
-  
+  const [isAuthResolved, setIsAuthResolved] = useState(false);
+
   const [fontsLoaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
 
-  // Called when all app initialization is done
+  // Called by AppInitializer once auth restoration has actually completed
   const onAppLoadComplete = useCallback(() => {
-    if (fontsLoaded) {
-      setIsAppReady(true);
-    }
-  }, [fontsLoaded]);
+    setIsAuthResolved(true);
+  }, []);
 
   // Minimum splash screen time
   useEffect(() => {
@@ -45,12 +44,13 @@ export const useAppLayout = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Trigger initialization when fonts are ready
+  // The app is only ready once fonts are loaded AND auth state is resolved,
+  // so the splash never hides before authentication status is genuinely known.
   useEffect(() => {
-    if (fontsLoaded) {
-      onAppLoadComplete();
+    if (fontsLoaded && isAuthResolved) {
+      setIsAppReady(true);
     }
-  }, [fontsLoaded, onAppLoadComplete]);
+  }, [fontsLoaded, isAuthResolved]);
 
   // Lock screen orientation to portrait mode
   useEffect(() => {
