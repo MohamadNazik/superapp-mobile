@@ -13,7 +13,7 @@
 // KIND, either express or implied.  See the License for the
 // specific language governing permissions and limitations
 // under the License.
-import { APPS, AUTH_DATA, USER_INFO } from "@/constants/Constants";
+import { AUTH_DATA, USER_INFO } from "@/constants/Constants";
 import { ScreenPaths } from "@/constants/ScreenPaths";
 import { resetAll } from "@/context/slices/authSlice";
 import { persistor, RootState } from "@/context/store";
@@ -60,7 +60,6 @@ export const performLogout = createAsyncThunk(
       await clearAllExchangedTokens(appIds);
       
       await AsyncStorage.removeItem(USER_INFO);
-      await AsyncStorage.removeItem(APPS);
 
       Alert.alert(
         "Logout Successful",
